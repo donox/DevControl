@@ -1,0 +1,166 @@
+{
+  "pipeline": [
+    [
+      {
+        "step_name": "process_images",
+        "module": "custom_operations",
+        "function": "process_image_data",
+        "process_mode": "nested",
+        "PROCESS_MODE_OPTIONS": [
+          "nested",
+          "single",
+          "none"
+        ],
+        "input": {
+          "mode": "storage",
+          "STORAGE_MODE_OPTIONS": [
+            "previous",
+            "storage",
+            "passthrough"
+          ],
+          "storage": {
+            "type": "file",
+            "format": "image_list",
+            "location": "tmp/raw_images"
+          }
+        },
+        "output": {
+          "storage": {
+            "type": "memory",
+            "format": "dataframe",
+            "persistence": "pipeline"
+          }
+        }
+      },
+      {
+        "step_name": "load_pdf",
+        "module": "custom_operations",
+        "function": "convert_pdf_to_images",
+        "input": {
+          "source": "previous_step"
+        },
+        "output": {
+          "storage": {
+            "type": "file",
+            "format": "image_list",
+            "location": "tmp/raw_images"
+          }
+        }
+      },
+      {
+        "step_name": "process_images",
+        "module": "custom_operations",
+        "function": "process_image_data",
+        "input": {
+          "source": "storage",
+          "storage": {
+            "type": "file",
+            "format": "image_list",
+            "location": "/home/don/Documents/Temp/dev990/data/example.pdf"
+          },
+          "skip_processing": false
+        },
+        "output": {
+          "storage": {
+            "type": "memory",
+            "format": "dataframe"
+          }
+        }
+      },
+      {
+        "comment": "Each pdf input file consists of images of portions of the 990PF",
+        "commen2": "The output is a list of images representing sections of the document.",
+        "skip_step": false,
+        "step_name": "convert_pdf_to_images",
+        "module": "convert_pdf_to_images",
+        "function": "convert_pdf_to_images",
+        "input": {
+          "source": "storage",
+          "storage": {
+            "type": "memory",
+            "format": "dataframe"
+          },
+          "skip_processing": false
+        },
+        "output": {
+          "storage": {
+            "type": "memory",
+            "format": "dataframe"
+          }
+        }
+      },
+      {
+        "comment": "Converts list of images to directory of images and tsv files.",
+        "skip_step": false,
+        "skip_sequencing": true,
+        "step_name": "pdf_to_text_step",
+        "module": "pdf_to_text_boxes",
+        "function": "extract_text_from_image",
+        "input": {
+          "source": "storage",
+          "storage": {
+            "type": "file",
+            "format": "image_list",
+            "location": "tmp/raw_images"
+          },
+          "skip_processing": true
+        },
+        "output": {
+          "storage": {
+            "type": "memory",
+            "format": "dataframe"
+          }
+        }
+      },
+      {
+        "comment": "Creates list of elements (bounding box and text) and writes them to a temp file.",
+        "skip_step": false,
+        "skip_sequencing": true,
+        "process_steps": 1,
+        "step_name": "identify_form_elements",
+        "module": "pdf_to_text_boxes",
+        "function": "identify_form_elements",
+        "use_intermediate_file": true
+      },
+      {
+        "comment": "Draws svg of bounding boxes.",
+        "skip_step": false,
+        "skip_sequencing": true,
+        "process_steps": 1,
+        "step_name": "draw_svg",
+        "module": "pdf_to_text_boxes",
+        "function": "create_svg_from_containers",
+        "use_intermediate_file": true
+      },
+      {
+        "skip_step": true,
+        "step_name": "process_dict_step",
+        "module": "process_dict",
+        "function": "process_dict",
+        "use_intermediate_file": false
+      },
+      {
+        "skip_step": true,
+        "step_name": "process_list_step",
+        "module": "process_list",
+        "function": "process_list",
+        "use_intermediate_file": false
+      },
+      {
+        "skip_step": true,
+        "step_name": "process_directory_step",
+        "module": "process_directory",
+        "function": "process_directory",
+        "use_intermediate_file": false
+      },
+      {
+        "skip_step": true,
+        "step_name": "process_nested_step",
+        "module": "process_nested",
+        "function": "process_nested",
+        "use_intermediate_file": false
+      }
+    ]
+  ]
+}
+

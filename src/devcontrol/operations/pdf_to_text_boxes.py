@@ -1,13 +1,13 @@
 import json
 import logging
-
 from pdf2image import convert_from_path
 import pytesseract
 import pandas as pd
 import os
 import svgwrite
 import tempfile
-from utils import temp_file_rw as temp_mgr
+from devcontrol.utils import temp_file_rw as temp_mgr
+
 
 def extract_text_from_image(images, output_dir=None):
     """
@@ -21,7 +21,7 @@ def extract_text_from_image(images, output_dir=None):
         str: Path to the temporary file containing the OCR results.
     """
     if output_dir is None:
-        output_dir = os.getcwd() + "/pdf_images"
+        output_dir = os.getcwd() + "/output/pdf_images"
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
