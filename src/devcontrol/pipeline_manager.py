@@ -1,20 +1,33 @@
 import os
 import json
+import yaml
 from utils.logger import setup_logger
-from utils.io_utils import read_json, write_json, load_function
+from utils.io_utils import read_json, write_json, load_function, read_yaml
 from operations import process_list, process_dict, process_directory, process_nested
 from data_management.pipeline_data_store import PipelineDataStore
 
 
 class PipelineManager:
     def __init__(self, config, pipeline_config):
-        self.config = config
-        self.pipeline_log = os.path.join(".", config['paths']["logs_dir"], "pipeline_log.log")
-        self.logger = setup_logger("pipeline", self.pipeline_log)
-        self.pipeline_config = pipeline_config
-        self.data_store = PipelineDataStore(
-            base_path=os.path.join(".", config['paths'].get("data_dir", "pipeline_data"))
-        )
+        """Initialize PipelineManager with either file paths or config dictionaries
+
+        Args:
+            config: Either a path to config file or config dictionary
+            pipeline_config: Either a path to pipeline config file or pipeline config dictionary
+        """
+        try:
+            # Load config if it's a path, otherwise use it directly
+            self.config = read_yaml(config) if isinstance(config, (str, bytes, os.PathLike)) else config
+            self.pipeline_config = read_yaml(pipeline_config) if isinstance(pipeline_config, (
+            str, bytes, os.PathLike)) else pipeline_config
+
+            self.pipeline_log = os.path.join(".", self.config['paths']["logs_dir"], "pipeline_log.log")
+            self.logger = setup_logger("pipeline", self.pipeline_log)
+            self.data_store = PipelineDataStore(
+                base_path=os.path.join(".", self.config['paths'].get("data_dir", "pipeline_data")))
+        except Exception as e:
+            print(f"Error initializing PipelineManager: {e}")
+            raise
 
     def _process_directory(self, step_config, input_path):
         """Processes a directory, including nested subdirectories."""
@@ -151,27 +164,16 @@ class PipelineManager:
             raise
 
     def run_pipeline(self, input_path, output_file):
-        """Run pipeline with storage-aware execution"""
+        """Runs the pipeline as defined in the YAML configuration."""
         try:
             current_data = input_path
 
-            for step_config in self.pipeline_config:
-                step_name = step_config["step_name"]
-                if type(step_name) is str:
-                    foo = 3
-                self.logger.debug(f"Starting pipeline step: {step_name}")
+            for step_config in self.pipeline_config["steps"]:
+                # Log in YAML format for readability
+                self.logger.debug(f"Starting pipeline step:\n{yaml.dump(step_config, default_flow_style=False)}")
+                current_data = self._process_nested(step_config, current_data)
 
-                # Check if we should skip processing by using stored data
-                input_config = step_config.get("input", {})
-                if input_config.get("source") == "storage" and input_config.get("skip_processing", False):
-                    self.logger.info(f"Skipping processing for {step_name}, using stored data")
-                    current_data = self.data_store.get_step_input(
-                        step_name=step_name,
-                        storage_config=input_config["storage"]
-                    )
-                else:
-                    current_data = self._process_nested(step_config, current_data)
-
+            # Final output in JSON
             write_json(current_data, output_file)
             self.logger.info(f"Pipeline execution completed. Final output written to {output_file}.")
 

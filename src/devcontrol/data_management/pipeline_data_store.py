@@ -6,6 +6,7 @@ import os
 from PIL import Image
 from datetime import datetime
 import io
+from devcontrol.utils.io_utils import read_yaml, read_json, write_json, load_function
 
 
 class PipelineDataStore:
@@ -67,7 +68,7 @@ class PipelineDataStore:
 
     def _store_in_file(self, step_name: str, data: Any,
                        storage_config: Dict, metadata: Optional[Dict]) -> None:
-        """Store data in file with format conversion"""
+        """Store data in file with format conversion - using JSON for data storage"""
         data_format = storage_config.get("format", "raw")
         location = storage_config.get("location", os.path.join(self.base_path, step_name))
         os.makedirs(os.path.dirname(location), exist_ok=True)
@@ -76,8 +77,7 @@ class PipelineDataStore:
             self.type_converters[data_format]["to_file"](data, location)
         else:
             # Default JSON serialization for raw data
-            with open(location, 'w') as f:
-                json.dump({"data": data, "metadata": metadata}, f)
+            write_json({"data": data, "metadata": metadata}, location)
 
     def _df_to_file(self, df: pd.DataFrame, location: str) -> None:
         df.to_parquet(location + ".parquet")
@@ -181,17 +181,7 @@ class PipelineDataStore:
         return images
 
     def _get_from_file(self, step_name: str, storage_config: Dict) -> Any:
-        """Retrieve data from file storage using appropriate type converter
-
-        Args:
-            step_name: Name of the pipeline step
-            storage_config: Dictionary containing storage configuration including:
-                - format: Data format (e.g., "dataframe", "image_list")
-                - location: File path for storage
-
-        Returns:
-            Data in the specified format
-        """
+        """Retrieve data from file storage using appropriate type converter"""
         data_format = storage_config.get("format", "raw")
         location = storage_config.get("location", os.path.join(self.base_path, step_name))
 
@@ -202,8 +192,7 @@ class PipelineDataStore:
             return self.type_converters[data_format]["from_file"](location)
 
         # Default JSON deserialization for raw data
-        with open(location, 'r') as f:
-            stored_data = json.load(f)
-            return stored_data.get("data")
+        stored_data = read_json(location)
+        return stored_data.get("data")
 
     # Add more conversion methods for images, etc.

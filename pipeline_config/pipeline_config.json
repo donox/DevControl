@@ -1,37 +1,7 @@
 {
   "pipeline": [
     [
-      {
-        "step_name": "process_images",
-        "module": "custom_operations",
-        "function": "process_image_data",
-        "process_mode": "nested",
-        "PROCESS_MODE_OPTIONS": [
-          "nested",
-          "single",
-          "none"
-        ],
-        "input": {
-          "mode": "storage",
-          "STORAGE_MODE_OPTIONS": [
-            "previous",
-            "storage",
-            "passthrough"
-          ],
-          "storage": {
-            "type": "file",
-            "format": "image_list",
-            "location": "tmp/raw_images"
-          }
-        },
-        "output": {
-          "storage": {
-            "type": "memory",
-            "format": "dataframe",
-            "persistence": "pipeline"
-          }
-        }
-      },
+
       {
         "step_name": "load_pdf",
         "module": "custom_operations",

@@ -1,6 +1,8 @@
 import importlib
 import os
 import json
+import yaml
+
 
 def load_function(name, function_name, pkg='operations'):
     """Dynamically loads a function from a module."""
@@ -8,16 +10,33 @@ def load_function(name, function_name, pkg='operations'):
     module = importlib.import_module(module_name)
     return getattr(module, function_name)
 
+
+def read_yaml(file_path):
+    """Read configuration from a YAML file."""
+    try:
+        with open(file_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        raise IOError(f"Error reading YAML file {file_path}: {e}")
+
+
 def read_json(file_path):
-    """Reads JSON data from a file."""
-    with open(file_path, 'r') as file:
-        return json.load(file)
+    """Read data from a JSON file."""
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        raise IOError(f"Error reading JSON file {file_path}: {e}")
+
 
 def write_json(data, file_path):
-    """Writes JSON data to a file."""
+    """Write data to a JSON file."""
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as file:
-        json.dump(data, file, indent=4)
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        raise IOError(f"Error writing JSON file {file_path}: {e}")
 
 
 def run_printer():

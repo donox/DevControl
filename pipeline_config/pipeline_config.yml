@@ -1,0 +1,124 @@
+# Pipeline configuration for PDF processing and analysis
+steps:
+  # First step for documentation only
+  - step_name: load_pdf
+    module: custom_operations
+    function: convert_pdf_to_images
+    process_mode: none    #  "nested", "single", or "none"
+    input:
+      mode: previous    #  "previous", "storage", or "passthrough"
+    output:
+      storage:
+        type: file    # "memory", "file", or "database"
+        format: image_list  # "json", "dataframe", "image_list", or "raw"
+        persistence: pipeline  # "step" or "pipeline"
+        location: /home/don/Documents/Temp/dev990/data/example.pdf
+
+  # Download from URL and select 990PF, deleting others
+  # THIS STEP NOT SPECIFIED PROPERLY
+  - step_name: process_images
+    module: custom_operations      #  BRING/REFERENCE MODULE FROM OTHER PROJECT
+    function: process_image_data
+    process_mode: none    #  "nested", "single", or "none"
+    input:
+      mode: storage
+      storage:
+        type: file
+        format: image_list
+        location: /home/don/Documents/Temp/dev990/data/example.pdf
+    output:
+      storage:
+        type: file    # "memory", "file", or "database"
+        format: image_list  # "json", "dataframe", "image_list", or "raw"
+        persistence: pipeline  # "step" or "pipeline"
+        location: /home/don/Documents/Temp/dev990/data/example.pdf
+
+  - # PDF to Images conversion
+    step_name: convert_pdf_to_images
+    # Each pdf input file consists of images of portions of the 990PF.
+    # The output is a list of images representing sections of the document.
+    module: convert_pdf_to_images
+    function: convert_pdf_to_images
+    process_mode: nested
+    comment: Each pdf input file consists of images of portions of the 990PF
+    comment2: The output is a list of images representing sections of the document
+    input:
+      mode: storage
+      storage:
+        type: memory
+        format: dataframe
+    output:
+      storage:
+        type: memory
+        format: dataframe
+
+  - # Converts list of images to directory of images and tsv files.
+    step_name: pdf_to_text_step
+    module: pdf_to_text_boxes
+    function: extract_text_from_image
+    process_mode: single  # replacing skip_sequencing: true
+    comment: Converts list of images to directory of images and tsv files
+    input:
+      mode: storage
+      storage:
+        type: file
+        format: image_list
+        location: tmp/raw_images     # NEED PATH
+    output:
+      storage:
+        type: memory
+        format: dataframe
+
+  - # Form element identification
+    # Creates list of elements (bounding box and text) and writes them to a temp file.
+    step_name: identify_form_elements
+    module: pdf_to_text_boxes
+    function: identify_form_elements
+    process_mode: single
+    comment: Creates list of elements (bounding box and text) and writes them to a temp file
+    input:
+      mode: previous
+    output:
+      storage:
+        type: file
+        format: raw
+        persistence: pipeline
+
+  - # SVG Generation
+    # Draws svg of bounding boxes.
+    step_name: draw_svg
+    module: pdf_to_text_boxes
+    function: create_svg_from_containers
+    process_mode: single
+    comment: Draws svg of bounding boxes
+    input:
+      mode: previous
+    output:
+      storage:
+        type: file
+        format: raw
+        persistence: pipeline
+
+  # THIS MODULE SEEMS TO MAKE NO SENSE ANYMORE
+  - step_name: process_dict_step
+    module: process_dict
+    function: process_dict
+    process_mode: none
+
+  # THIS MODULE SEEMS TO MAKE NO SENSE ANYMORE
+  - step_name: process_list_step
+    module: process_list
+    function: process_list
+    process_mode: none
+
+  # THIS MODULE SEEMS TO MAKE NO SENSE ANYMORE
+  - step_name: process_directory_step
+    module: process_directory
+    function: process_directory
+    process_mode: none
+
+  # THIS MODULE SEEMS TO MAKE NO SENSE ANYMORE
+  - step_name: process_nested_step
+    module: process_nested
+    function: process_nested
+    process_mode: none
