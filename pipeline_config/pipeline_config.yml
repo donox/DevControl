@@ -1,5 +1,14 @@
 # Pipeline configuration for PDF processing and analysis
 steps:
+  # EXAMPLE ADDING DB SUPPORT - INTEGRATE WITH NORMAL FLOW
+  - step_name: "process_data"
+    module: "operations.process"
+    function: "process_data"
+    process_mode: none
+    output:
+      storage:
+        type: "database"
+
   # First step for documentation only
   - step_name: load_pdf
     module: custom_operations
@@ -15,23 +24,38 @@ steps:
         location: /home/don/Documents/Temp/dev990/data/example.pdf
 
   # Download from URL and select 990PF, deleting others
-  # THIS STEP NOT SPECIFIED PROPERLY
-  - step_name: process_images
-    module: custom_operations      #  BRING/REFERENCE MODULE FROM OTHER PROJECT
-    function: process_image_data
-    process_mode: none    #  "nested", "single", or "none"
+  - step_name: get_urls
+    module: devcontrol.user_level_operations.extract_urls
+    function: get_urls_referenced_on_website
+    process_mode: single    #  "nested", "single", or "none"
+    generator:
+      enabled: true
+      filter: "[x[0]]"    # do first element only to start
     input:
-      mode: storage
+      mode: explicit_input
       storage:
-        type: file
-        format: image_list
-        location: /home/don/Documents/Temp/dev990/data/example.pdf
+        type: url
+        value: https://www.irs.gov/charities-non-profits/form-990-series-downloads
     output:
       storage:
-        type: file    # "memory", "file", or "database"
-        format: image_list  # "json", "dataframe", "image_list", or "raw"
+        type: memory    # "memory", "file", or "database"
+        format: raw  # "json", "dataframe", "image_list", or "raw"
         persistence: pipeline  # "step" or "pipeline"
-        location: /home/don/Documents/Temp/dev990/data/example.pdf
+
+  # Next step that processes each URL
+  - step_name: unzip_files
+    module: devcontrol.user_level_operations.unzip_file
+    function: unzip_file
+    generator:
+      enabled: true  # Process URLs one at a time
+      filter: "[x[0]]"    # do first element only to start
+    input:
+      mode: previous  # Get input from previous step's output
+    output:
+      storage:
+        type: file
+        format: raw
+        location: "output_directory"
 
   - # PDF to Images conversion
     step_name: convert_pdf_to_images

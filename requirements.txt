@@ -1,0 +1,12 @@
+PyYAML~=6.0.1
+pandas~=2.2.3
+numpy~=1.26.4
+devcontrol~=0.1
+SQLAlchemy~=1.4.50
+pytesseract~=0.3.13
+opencv-python~=4.10.0.84
+pdf2image~=1.17.0
+pillow~=10.2.0
+process_990s~=0.1
+svgwrite~=1.4.3
+setuptools~=75.6.0

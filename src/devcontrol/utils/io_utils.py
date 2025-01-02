@@ -4,9 +4,19 @@ import json
 import yaml
 
 
-def load_function(name, function_name, pkg='operations'):
-    """Dynamically loads a function from a module."""
-    module_name = pkg + '.' + name
+def load_function(name, function_name, pkg=None):
+    """Dynamically loads a function from a module.
+
+    Args:
+        name: Module path (can be full path or relative to pkg)
+        function_name: Name of function to load
+        pkg: Optional package prefix for relative module paths
+    """
+    if pkg and '.' not in name:
+        module_name = f"{pkg}.{name}"
+    else:
+        module_name = name
+
     module = importlib.import_module(module_name)
     return getattr(module, function_name)
 

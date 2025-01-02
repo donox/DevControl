@@ -7,12 +7,17 @@ from PIL import Image
 from datetime import datetime
 import io
 from devcontrol.utils.io_utils import read_yaml, read_json, write_json, load_function
+from devcontrol.database.database_manager import DatabaseManager
 
 
 class PipelineDataStore:
-    def __init__(self, base_path: str = "./pipeline_data"):
+    def __init__(self, logger, base_path: str = "./pipeline_data", db_connection_string: str = None):
         self.memory_store = {}
         self.base_path = base_path
+        self.db_manager = None
+        if db_connection_string:
+            self.db_manager = DatabaseManager(db_connection_string)
+            self.db_manager.init_db()
         self.type_converters = {
             "dataframe": {
                 "to_file": self._df_to_file,
@@ -28,19 +33,62 @@ class PipelineDataStore:
             },
             # Add more type converters as needed
         }
+        self.logger = logger
 
     def store_step_output(self, step_name: str, data: Any,
                           storage_config: Dict, metadata: Optional[Dict] = None) -> None:
-        """Store step output according to storage configuration"""
+        """Store step output according to storage configuration
+
+        Args:
+            step_name: Name of the pipeline step
+            data: Data to store
+            storage_config: Dictionary containing storage configuration:
+                {
+                    "type": "memory"|"file"|"database",
+                    "format": "raw"|"dataframe"|"image_list"|etc,
+                    "location": "path/for/file/storage"  # only for file storage
+                }
+            metadata: Optional dictionary of metadata about the stored data
+        """
         storage_type = storage_config.get("type", "memory")
         data_format = storage_config.get("format", "raw")
 
-        if storage_type == "memory":
-            self._store_in_memory(step_name, data, data_format, metadata)
-        elif storage_type == "file":
-            self._store_in_file(step_name, data, storage_config, metadata)
-        else:
-            raise ValueError(f"Unsupported storage type: {storage_type}")
+        try:
+            # Handle database storage
+            if storage_type == "database":
+                if not self.db_manager:
+                    raise ValueError("Database storage requested but database manager not initialized")
+
+                # Convert data to storable format if needed
+                if data_format in self.type_converters:
+                    data = self.type_converters[data_format]["to_memory"](data)
+
+                self._store_in_database(step_name, data, metadata)
+
+            # Handle memory storage
+            elif storage_type == "memory":
+                self._store_in_memory(step_name, data, data_format, metadata)
+
+            # Handle file storage
+            elif storage_type == "file":
+                self._store_in_file(step_name, data, storage_config, metadata)
+
+            else:
+                raise ValueError(f"Unsupported storage type: {storage_type}")
+
+            # Log successful storage
+            storage_location = (storage_config.get("location", "<memory>")
+                                if storage_type != "database" else "database")
+            self.logger.info(
+                f"Stored output for step '{step_name}' in {storage_type} "
+                f"storage at {storage_location}"
+            )
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to store output for step '{step_name}' in {storage_type} storage: {str(e)}"
+            )
+            raise
 
     def get_step_input(self, step_name: str,
                        storage_config: Dict) -> Any:
@@ -63,21 +111,67 @@ class PipelineDataStore:
         self.memory_store[step_name] = {
             "data": data,
             "format": data_format,
-            "metadata": metadata
+            "metadata": {
+                **(metadata or {}),
+                "stored_at": datetime.now().isoformat()
+            }
         }
 
     def _store_in_file(self, step_name: str, data: Any,
                        storage_config: Dict, metadata: Optional[Dict]) -> None:
-        """Store data in file with format conversion - using JSON for data storage"""
+        """Store data in file with format conversion"""
         data_format = storage_config.get("format", "raw")
         location = storage_config.get("location", os.path.join(self.base_path, step_name))
+
+        # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(location), exist_ok=True)
 
         if data_format in self.type_converters:
             self.type_converters[data_format]["to_file"](data, location)
+
+            # Store metadata separately
+            metadata_file = f"{location}_metadata.json"
+            write_json(
+                {
+                    "metadata": metadata,
+                    "format": data_format,
+                    "stored_at": datetime.now().isoformat()
+                },
+                metadata_file
+            )
         else:
             # Default JSON serialization for raw data
-            write_json({"data": data, "metadata": metadata}, location)
+            write_json(
+                {
+                    "data": data,
+                    "metadata": metadata,
+                    "format": data_format,
+                    "stored_at": datetime.now().isoformat()
+                },
+                location
+            )
+
+    def _store_in_database(self, step_name: str, data: Any, metadata: Optional[Dict]) -> None:
+        """Store data in database with error handling and validation"""
+        try:
+            # Validate data is JSON-serializable
+            json.dumps(data)  # Will raise TypeError if not serializable
+
+            # Store in database
+            self.db_manager.store_pipeline_data(
+                step_name=step_name,
+                data=data,
+                metadata={
+                    **(metadata or {}),
+                    "stored_at": datetime.now().isoformat(),
+                    "data_type": str(type(data).__name__)
+                }
+            )
+
+        except TypeError as e:
+            raise ValueError(f"Data for step '{step_name}' is not JSON-serializable: {str(e)}")
+        except Exception as e:
+            raise RuntimeError(f"Database storage failed for step '{step_name}': {str(e)}")
 
     def _df_to_file(self, df: pd.DataFrame, location: str) -> None:
         df.to_parquet(location + ".parquet")

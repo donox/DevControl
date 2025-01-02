@@ -7,9 +7,12 @@ paths:
   logs_dir: logs
 
 database:
+  enabled: true
+  # connection_string: 'postgresql://postgres:asdf1234@localhost:5432/pipeline_db'    # for superuser
+  connection_string: 'postgresql://don:asdf1234@localhost:5432/pipeline_db'
   host: localhost
   port: 5432
-  database: devcontrol
+  database: devcontrol\
   username: user
   password: password
 
