@@ -1,0 +1,16 @@
+# test_config.yml
+paths:
+  logs_dir: "logs"
+  data_dir: "data"
+
+logging:
+  level: "DEBUG"  # Set to DEBUG for maximum visibility
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file_name: "pipeline_log.log"
+
+database:
+  enabled: false
+  connection_string: "sqlite:///test.db"
+
+execution:
+  max_iterations: 10

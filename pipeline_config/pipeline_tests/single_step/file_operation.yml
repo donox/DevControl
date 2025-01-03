@@ -1,0 +1,18 @@
+# single_step_file.yml
+steps:
+  - step_name: "file_operation"
+    module: "pipe_test.operations"
+    function: "file_transform"
+    process_mode: "single"
+    input:
+      mode: "storage"
+      storage:
+        type: "file"
+        format: "json"
+        location: "test_data/input.json"
+    output:
+      storage:
+        type: "file"
+        format: "json"
+        persistence: "step"
+        location: "test_output/output.json"

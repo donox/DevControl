@@ -1,0 +1,12 @@
+# single_step_skip.yml
+steps:
+  - step_name: "skip_operation"
+    module: "pipe_test.operations"
+    function: "no_transform"
+    process_mode: "none"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

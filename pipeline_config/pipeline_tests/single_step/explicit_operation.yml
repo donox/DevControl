@@ -1,0 +1,15 @@
+# single_step_explicit.yml
+steps:
+  - step_name: "explicit_operation"
+    module: "pipe_test.operations"
+    function: "string_transform"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: "test_string"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

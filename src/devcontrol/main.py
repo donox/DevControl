@@ -32,29 +32,66 @@ def setup_directories(config):
             os.makedirs(config['paths'][dir_key], exist_ok=True)
 
 
-# pipeline_manager.py
-# class PipelineManager:
-#     def __init__(self, config, pipeline_config):
-#         """Initialize PipelineManager with either file paths or config dictionaries
-#
-#         Args:
-#             config: Either a path to config file or config dictionary
-#             pipeline_config: Either a path to pipeline config file or pipeline config dictionary
-#         """
-#         try:
-#             # Load config if it's a path, otherwise use it directly
-#             self.config = read_yaml(config) if isinstance(config, (str, bytes, os.PathLike)) else config
-#             self.pipeline_config = read_yaml(pipeline_config) if isinstance(pipeline_config, (
-#             str, bytes, os.PathLike)) else pipeline_config
-#
-#             self.pipeline_log = os.path.join(".", self.config['paths']["logs_dir"], "pipeline_log.log")
-#             self.logger = setup_logger("pipeline", self.pipeline_log)
-#             self.data_store = PipelineDataStore(
-#                 base_path=os.path.join(".", self.config['paths'].get("data_dir", "pipeline_data"))
-#             )
-#         except Exception as e:
-#             print(f"Error initializing PipelineManager: {e}")
-#             raise
+# pipe_test/setup.py
+def setup_test_env():
+    """Create necessary test directories"""
+    dirs = [
+        "logs",
+        "data",
+        "output"
+    ]
+    for d in dirs:
+        os.makedirs(d, exist_ok=True)
+
+
+def run_all_tests():
+    # Setup test environment
+    setup_test_env()
+
+    # Load base config
+    config_path = "/home/don/PycharmProjects/DevControl/pipeline_config/pipeline_tests/test_config.yml"
+    test_dir = "/home/don/PycharmProjects/DevControl/pipeline_config/pipeline_tests/single_step"
+
+    print(f"\nRunning all pipeline tests from {test_dir}")
+    print("-" * 50)
+
+    # Get all yaml files in test directory except test_config.yml
+    test_files = [f for f in os.listdir(test_dir)
+                  if f.endswith(('.yml', '.yaml'))
+                  and f != 'test_config.yml']
+
+    for test_file in test_files:
+        full_path = os.path.join(test_dir, test_file)
+        print(f"\nRunning test: {test_file}")
+        print("-" * 30)
+
+        try:
+            # Create pipeline manager
+            pipeline = PipelineManager(config_path, full_path)
+
+            # Create output filename based on test name
+            output_name = os.path.splitext(test_file)[0] + "_output.json"
+            output_file = os.path.join("test_output", output_name)
+
+            # Run pipeline with test input
+            input_data = "test string"
+            pipeline.run_pipeline(input_data, output_file)
+
+            # Check log file
+            log_file = os.path.join("logs", "pipeline_log.log")
+            if os.path.exists(log_file):
+                with open(log_file, 'r') as f:
+                    print("Log contents:")
+                    print(f.read())
+                    print("-" * 30)
+            else:
+                print(f"No log file found at {log_file}")
+
+            print(f"Test completed: {test_file}")
+
+        except Exception as e:
+            print(f"Error running test {test_file}: {str(e)}")
+            continue
 
 
 # main.py
@@ -93,19 +130,11 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    sys.argv = ['main.py',
-                '--base-dir', '/home/don/Documents/Temp/dev990',
-                '--config', '/home/don/PycharmProjects/DevControl/config.yml',
-                '--pipeline-config', '/home/don/PycharmProjects/DevControl/pipeline_config/pipeline_config.yml',
-                '--input-path', '/home/don/Documents/Temp/dev990/temp_text.txt',
-                '--output-file', '/home/don/Documents/Temp/dev990/final_output.json']
-    main()
-
-# c_path = "/home/don/PycharmProjects/DevControl/config.cfg"
-# config = load_config(config_path=c_path)  # working directory set for script and is already set.
-# operational_data = load_operational_data()
-# pipeline_config = operational_data["pipeline"]
-# pipeline = PipelineManager(config, pipeline_config)
-# infile = "/home/don/Documents/Temp/Dev990/temp_text.txt"
-# outfile = os.path.join(".", config['paths']["output_dir"], "final_output.json")
-# pipeline.run_pipeline(infile, outfile)
+    # sys.argv = ['main.py',
+    #             '--base-dir', '/home/don/Documents/Temp/dev990',
+    #             '--config', '/home/don/PycharmProjects/DevControl/config.yml',
+    #             '--pipeline-config', '/home/don/PycharmProjects/DevControl/pipeline_config/pipeline_config.yml',
+    #             '--input-path', '/home/don/Documents/Temp/dev990/temp_text.txt',
+    #             '--output-file', '/home/don/Documents/Temp/dev990/final_output.json']
+    # main()
+    run_all_tests()

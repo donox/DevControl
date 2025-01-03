@@ -1,0 +1,13 @@
+# single_step_db.yml
+steps:
+  - step_name: "db_operation"
+    module: "devcontrol.pipe_test.operations"
+    function: "data_transform"
+    process_mode: "single"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "database"
+        format: "raw"
+        persistence: "pipeline"

@@ -1,0 +1,12 @@
+# single_step_basic.yml
+steps:
+  - step_name: "basic_operation"
+    module: "pipe_test.operations"
+    function: "basic_transform"
+    process_mode: "single"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"
