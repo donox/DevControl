@@ -1,0 +1,26 @@
+# pipeline_tests/number_test.yml
+steps:
+  - step_name: "increment_test"
+    module: "pipe_test.operations"
+    function: "increment_number"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: 5
+    output:
+      storage:
+        type: "memory"
+        format: "raw"
+
+  - step_name: "multiply_test"
+    module: "pipe_test.operations"
+    function: "multiply_number"
+    process_mode: "single"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

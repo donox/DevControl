@@ -1,0 +1,15 @@
+# pipeline_tests/string_test.yml
+steps:
+  - step_name: "string_transform_test"
+    module: "pipe_test.operations"
+    function: "transform_string"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: "test_string"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

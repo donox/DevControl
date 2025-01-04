@@ -1,0 +1,15 @@
+# pipeline_tests/type_tests/string_test.yml
+steps:
+  - step_name: "string_type_test"
+    module: "pipe_test.type_operations"
+    function: "test_string_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: "TEST STRING"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

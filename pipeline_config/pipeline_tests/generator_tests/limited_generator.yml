@@ -1,0 +1,19 @@
+# pipeline_tests/generator_tests/limited_generator.yml
+steps:
+  - step_name: "limited_processor"
+    module: "pipe_test.type_operations"
+    function: "test_string_types"
+    process_mode: "single"
+    generator:
+      enabled: true
+      filter: "[x]"
+      max_items: 3  # Only process first 3 items
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: ["item1", "item2", "item3", "item4", "item5"]
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

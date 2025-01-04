@@ -1,0 +1,15 @@
+# pipeline_tests/dict_test.yml
+steps:
+  - step_name: "dict_transform_test"
+    module: "pipe_test.operations"
+    function: "transform_dict"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: {"key1": "value1", "key2": "value2"}
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

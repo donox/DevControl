@@ -1,0 +1,15 @@
+# pipeline_tests/type_tests/datetime_test.yml
+steps:
+  - step_name: "datetime_test"
+    module: "pipe_test.type_operations"
+    function: "test_datetime_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: "2024-01-03T12:00:00Z"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

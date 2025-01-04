@@ -1,0 +1,15 @@
+# pipeline_tests/type_tests/array_test.yml
+steps:
+  - step_name: "array_test"
+    module: "pipe_test.type_operations"
+    function: "test_array_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: [1, 2, 3, 4, 5]
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

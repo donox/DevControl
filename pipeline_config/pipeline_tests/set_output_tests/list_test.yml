@@ -1,0 +1,15 @@
+# pipeline_tests/list_test.yml
+steps:
+  - step_name: "list_transform_test"
+    module: "pipe_test.operations"
+    function: "transform_list"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: ["a", "b", "c"]
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

@@ -1,0 +1,15 @@
+# pipeline_tests/type_tests/dataframe_test.yml
+steps:
+  - step_name: "dataframe_test"
+    module: "pipe_test.type_operations"
+    function: "test_dataframe_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: {"col1": [1, 2, 3], "col2": ["a", "b", "c"]}
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

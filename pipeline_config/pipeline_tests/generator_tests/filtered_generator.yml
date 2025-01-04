@@ -1,0 +1,18 @@
+# pipeline_tests/generator_tests/filtered_generator.yml
+steps:
+  - step_name: "even_number_processor"
+    module: "pipe_test.type_operations"
+    function: "test_numeric_types"
+    process_mode: "single"
+    generator:
+      enabled: true
+      filter: "x % 2 == 0"  # Only process even numbers
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

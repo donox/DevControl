@@ -273,9 +273,16 @@ class PipelineManager:
         self.logger.debug(f"{step_name}: Generator preview: {preview}")
         return preview
 
+    # In pipeline_manager.py
+
     def _write_output(self, data, output_file, output_config):
         """Writes output in specified format"""
         output_format = output_config.get("format", "json")
+
+        # Convert generator to list if needed
+        if hasattr(data, '__iter__') and hasattr(data, '__next__'):
+            data = list(data)
+
         if output_format == "json":
             write_json(data, output_file)
         else:

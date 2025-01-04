@@ -1,0 +1,29 @@
+# pipeline_tests/type_tests/numeric_test.yml
+steps:
+  - step_name: "integer_test"
+    module: "pipe_test.type_operations"
+    function: "test_numeric_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: 42
+    output:
+      storage:
+        type: "memory"
+        format: "raw"
+
+  - step_name: "float_test"
+    module: "pipe_test.type_operations"
+    function: "test_numeric_types"
+    process_mode: "single"
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: 3.14
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

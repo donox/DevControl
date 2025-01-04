@@ -1,0 +1,12 @@
+# pipeline_tests/identity_test.yml
+steps:
+  - step_name: "identity_test"
+    module: "pipe_test.operations"
+    function: "identity_function"
+    process_mode: "single"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"

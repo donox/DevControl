@@ -1,0 +1,29 @@
+# pipeline_tests/generator_tests/chained_generator.yml
+steps:
+  - step_name: "first_processor"
+    module: "pipe_test.type_operations"
+    function: "test_numeric_types"
+    process_mode: "single"
+    generator:
+      enabled: true
+      filter: "x > 5"  # Process numbers greater than 5
+    input:
+      mode: "explicit_input"
+      storage:
+        type: "raw"
+        value: [3, 6, 9, 2, 8, 1, 7, 4]
+    output:
+      storage:
+        type: "memory"
+        format: "raw"
+
+  - step_name: "second_processor"
+    module: "pipe_test.type_operations"
+    function: "test_string_types"
+    process_mode: "single"
+    input:
+      mode: "previous"
+    output:
+      storage:
+        type: "memory"
+        format: "raw"
