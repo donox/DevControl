@@ -232,11 +232,11 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    # sys.argv = ['main.py',
-    #             '--base-dir', '/home/don/Documents/Temp/dev990',
-    #             '--config', '/home/don/PycharmProjects/DevControl/config.yml',
-    #             '--pipeline-config', '/home/don/PycharmProjects/DevControl/pipeline_config/pipeline_config.yml',
-    #             '--input-path', '/home/don/Documents/Temp/dev990/temp_text.txt',
-    #             '--output-file', '/home/don/Documents/Temp/dev990/final_output.json']
-    # main()
-    run_all_tests()
+    sys.argv = ['main.py',
+                '--base-dir', '/home/don/Documents/Temp/dev990',
+                '--config', '/home/don/PycharmProjects/DevControl/config.yml',
+                '--pipeline-config', '/home/don/PycharmProjects/DevControl/pipeline_config/process_990s/pipeline_config.yml',
+                '--input-path', '',
+                '--output-file', '/home/don/Documents/Temp/dev990/output/final_output.json']
+    main()
+    # run_all_tests()

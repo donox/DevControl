@@ -1,0 +1,55 @@
+# Pipeline configuration for getting form 990PF in xml format
+steps:
+  # First step for documentation only
+  - step_name: load_pdf
+    module: custom_operations
+    function: convert_pdf_to_images
+    process_mode: none    #  "nested", "single", or "none"
+    generator:
+      enabled: true
+      filter: "count < 2"    # filter expression has access to "item" and "count"
+    input:
+      mode: previous    #  "previous", "storage", or "passthrough"
+    output:
+      storage:
+        type: file    # "memory", "file", or "database"
+        format: image_list  # "json", "dataframe", "image_list", or "raw"
+        persistence: pipeline  # "step" or "pipeline"
+        location: /home/don/Documents/Temp/dev990/data/example.pdf
+
+  # Find urls on gov't website
+  - step_name: get_urls
+    module: devcontrol.user_level_operations.extract_urls
+    function: get_urls_referenced_on_website
+    process_mode: single    #  "nested", "single", or "none"
+    generator:
+      enabled: true
+      filter: "count < 2"    # do first element only to start
+    input:
+      mode: explicit_input
+      storage:
+        type: url
+        value: https://www.irs.gov/charities-non-profits/form-990-series-downloads
+    output:
+      storage:
+        type: memory    # "memory", "file", or "database"
+        format: raw  # "json", "dataframe", "image_list", or "raw"
+        persistence: pipeline  # "step" or "pipeline"
+
+  # Find urls on gov't website
+  - step_name: download_zip_file
+    module: devcontrol.user_level_operations.download_zip
+    function: download_next_url
+    process_mode: single    #  "nested", "single", or "none"
+    generator:
+      enabled: false
+      filter: ""
+    input:
+      mode: previous
+    output:
+      storage:
+        type: file    # "memory", "file", or "database"
+        format: raw  # "json", "dataframe", "image_list", or "raw"
+        location: "/data/zip_files"
+        persistence: pipeline  # "step" or "pipeline"
+
