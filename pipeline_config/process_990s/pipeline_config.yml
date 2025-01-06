@@ -42,14 +42,54 @@ steps:
     function: download_next_url
     process_mode: single    #  "nested", "single", or "none"
     generator:
-      enabled: false
+      enabled: true       # processes single file, but uses chained generator
       filter: ""
     input:
       mode: previous
+    parameters:
+      directory: ./output/zip_files
+    output:
+      storage:
+        type: memory    # "memory", "file", or "database"
+        format: raw  # "json", "dataframe", "image_list", or "raw"
+        persistence: step  # "step" or "pipeline"
+
+  # Unzip downloaded file to directory with name taken from filename
+  - step_name: unzip_file
+    module: devcontrol.user_level_operations.unzip_file
+    function: unzip_driver
+    process_mode: single    #  "nested", "single", or "none"
+    generator:
+      enabled: true       # processes single file, but uses chained generator
+      filter: ""
+    input:
+      mode: previous
+    parameters:
+      directory: ./output/expanded_zip_files
     output:
       storage:
         type: file    # "memory", "file", or "database"
         format: raw  # "json", "dataframe", "image_list", or "raw"
         location: "/data/zip_files"
+        persistence: pipeline  # "step" or "pipeline"
+
+  # Filter downloaded files finding xpath results
+  # XPaths can be found in https://github.com/Nonprofit-Open-Data-Collective
+  - step_name: filter_files
+    module: devcontrol.user_level_operations.filter_files
+    function: filter_driver
+    process_mode: single    #  "nested", "single", or "none"
+    generator:
+      enabled: false       # processes single file, but uses chained generator
+      filter: ""
+    input:
+      mode: previous
+    parameters:
+      directory: ./output/expanded_zip_files/2024_TEOS_XML_02A
+      xpaths: ./Xpath990PF.csv
+    output:
+      storage:
+        type: file    # "memory", "file", or "database"
+        format: raw  # "json", "dataframe", "image_list", or "raw"
         persistence: pipeline  # "step" or "pipeline"
 

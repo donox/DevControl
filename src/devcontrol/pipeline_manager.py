@@ -89,7 +89,7 @@ class PipelineManager:
             raise
 
     def _process_step(self, step_config, input_data):
-        """Handles single step processing"""
+        """Handles single step processing."""
         step_name = step_config["step_name"]
 
         # Handle input processing
@@ -100,6 +100,11 @@ class PipelineManager:
             output_data = self._process_nested(step_config, processed_input)
         else:
             output_data = self.execute_operation(step_config, processed_input, step_name)
+
+        # Avoid wrapping if already a generator
+        if step_config.get("generator", {}).get("enabled", False):
+            if not (hasattr(output_data, '__iter__') and hasattr(output_data, '__next__')):
+                output_data = self._wrap_in_generator(output_data, step_config)
 
         return output_data
 
@@ -139,7 +144,9 @@ class PipelineManager:
             raise
 
     def execute_operation(self, step_config, input_data, step_context):
-        """Execute operation with input/output handling"""
+        """
+        Execute operation with input/output handling and optional parameters.
+        """
         step_name = step_config["step_name"]
         self.logger.info(f"Begin Processing Step: {step_name}")
 
@@ -149,11 +156,19 @@ class PipelineManager:
             if step_config.get("process_mode") != "none":
                 operation = load_function(step_config["module"], step_config["function"])
 
+            # Extract optional parameters from step config
+            parameters = step_config.get("parameters", {})
+            print(f"Config parms: {parameters}")
+
             # Process the data
             if step_config.get("process_mode") == "none":
                 output_data = input_data
             else:
-                output_data = operation(input_data)
+                # Pass parameters if the function accepts them
+                if parameters:
+                    output_data = operation(input_data, **parameters)
+                else:
+                    output_data = operation(input_data)
 
             # Handle output storage
             output_data = self._handle_output(step_config, output_data, step_context)
@@ -207,15 +222,35 @@ class PipelineManager:
         return data
 
     def _wrap_in_generator(self, data, step_config):
-        """Creates generator wrapper for step output"""
+        """Ensures generator output is correctly wrapped and applies filter expressions."""
         filter_expr = step_config.get("generator", {}).get("filter")
-        generator = self.create_generator(data, filter_expr)
+        count = 0  # Initialize count for filtering
 
-        # Debug generator flow if debug logging enabled
-        if self.logger.isEnabledFor(logging.DEBUG):
-            self.debug_generator_flow(step_config, generator)
+        def filtered_generator():
+            nonlocal count
+            for item in data:
+                print(f"Filtering Item: {item}, Count: {count}")  # Debug output
+                if filter_expr:
+                    filter_func = eval(f"lambda item, count: {filter_expr}")
+                    try:
+                        if filter_func(item, count):
+                            yield item
+                    except Exception as e:
+                        print(f"Error in filter function: {e}")
+                        raise
+                else:
+                    yield item
+                count += 1
 
-        return generator
+        # Check if data is already a generator
+        if hasattr(data, '__iter__') and hasattr(data, '__next__'):
+            return filtered_generator()
+
+        # Wrap non-generator iterables
+        if isinstance(data, (list, tuple)):
+            return filtered_generator()
+
+        raise ValueError(f"Expected iterable or generator, but got {type(data)}")
 
     def create_generator(self, data, filter_expr=None):
         """Creates a generator from data with optional filtering."""
@@ -226,14 +261,11 @@ class PipelineManager:
                     break
 
                 if filter_expr:
-                    try:
-                        filter_func = eval(f"lambda item, count=count: {filter_expr}")
-                        if filter_func(item):
-                            yield item
-                            count += 1
-                    except Exception as e:
-                        self.logger.error(f"Error in filter expression: {e}")
-                        raise
+                    # Define filter_func with count as a closure variable
+                    filter_func = eval(f"lambda item: {filter_expr}")
+                    if filter_func(item):
+                        yield item
+                        count += 1
                 else:
                     yield item
                     count += 1

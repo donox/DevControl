@@ -3,41 +3,39 @@ from pathlib import Path
 from contextlib import closing
 
 
-def download_next_url(url_generator):
+def download_next_url(url_generator, **kwargs):
     try:
         for url in url_generator:
             next_url = next(url_generator)
-            result = download_zip(next_url)
+            result = download_zip(next_url, **kwargs)
             yield result
     except StopIteration:
         print("No more URLs available in the generator")
         return None
 
 
-import requests
-from pathlib import Path
-from contextlib import closing
-
-def download_zip(url, directory=None):
+def download_zip(url, **kwargs):
     """
     Download a zip file from a URL and save it to the specified directory if not already downloaded.
 
     Args:
         url (str): URL of the zip file to download.
-        directory (str): Directory to save the file. Defaults to current directory.
+        kwargs (dictionary): Dictionary containing directory (key: directory)
 
     Returns:
         str: Path of the downloaded or existing file, or None if an error occurred.
     """
     try:
         # Set default directory
-        if directory is None:
+        if 'directory' not in kwargs or kwargs['directory'] is None:
             directory = "./output/zip_files"
+        else:
+            directory = kwargs["directory"]
         dir_path = Path(directory)
         dir_path.mkdir(parents=True, exist_ok=True)
 
         # Extract the base file name from the URL, removing the `.zip` extension
-        filename = Path(url).stem  # Gets "2024_TEOS_XML_01A" from the example URL
+        filename = Path(url).stem + ".zip" # Gets "2024_TEOS_XML_01A" from the example URL
         filepath = dir_path / filename
 
         # Check if the file already exists

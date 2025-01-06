@@ -4,43 +4,69 @@ import shutil
 from datetime import datetime
 
 
-def unzip_file(zip_filename, target_directory="/home/don/Documents/Temp/dev990/data/work_files"):
+def unzip_driver(filename_generator, **kwargs):
+    try:
+        print(f"Received filename_generator: {type(filename_generator)}")
+        for zip_filename in filename_generator:
+            result = unzip_file(zip_filename, **kwargs)
+            yield result
+    except StopIteration:
+        return None
+
+
+def unzip_file(zip_filename, **kwargs):
     """
-    Unzip a file into a directory, moving existing directory contents to trash first
+    Unzip a file into a structured directory.
 
     Args:
-        zip_filename: Path to the zip file
-        target_directory: Directory to unzip contents into
+        zip_filename (str): Path to the zip file.
+        directory (str): Target base directory to unzip contents into.
+        delete_current (bool, optional): Whether to delete existing directory if it exists.
 
     Returns:
-        bool: True if successful, False if error occurred
+        bool: True if successful or directory already exists and processing is skipped, False if error occurred.
     """
     try:
-        # If directory exists, move its contents to trash
-        if os.path.exists(target_directory):
-            trash_dir = os.path.expanduser('~/.local/share/Trash/files')
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            trash_name = f"{os.path.basename(target_directory)}_{timestamp}"
-            trash_path = os.path.join(trash_dir, trash_name)
+        # Extract parameters
+        target_directory = kwargs.get('directory')
+        delete_current = kwargs.get('delete_current', False)
 
-            # Move existing directory to trash
-            shutil.move(target_directory, trash_path)
+        if not target_directory:
+            raise ValueError("The 'directory' parameter is required in kwargs.")
 
-        # Create fresh directory
-        os.makedirs(target_directory, exist_ok=True)
+        # Get the base name for the subdirectory from the zip file name
+        base_name = os.path.splitext(os.path.basename(zip_filename))[0]
+        subdirectory = os.path.join(target_directory, base_name)
 
-        # Unzip the file
+        # Check if directory already exists
+        if os.path.exists(subdirectory):
+            if delete_current:
+                # Delete the existing directory
+                shutil.rmtree(subdirectory)
+                print(f"Existing directory '{subdirectory}' deleted as per 'delete_current' parameter.")
+            else:
+                # Log and return True if the directory exists and processing is skipped
+                print(f"Directory '{subdirectory}' already exists. Skipping unzipping.")
+                return subdirectory
+
+        # Create the base and subdirectories
+        raw_directory = os.path.join(subdirectory, 'raw')
+        os.makedirs(raw_directory, exist_ok=True)
+        processed_directory = os.path.join(subdirectory, 'processed')
+        os.makedirs(processed_directory, exist_ok=True)
+
+        # Unzip the file into the raw subdirectory
         with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
-            zip_ref.extractall(target_directory)
+            zip_ref.extractall(raw_directory)
 
-        return True
+        print(f"Unzipped '{zip_filename}' into '{raw_directory}'.")
+        return subdirectory
 
     except Exception as e:
-        print(f"Error unzipping {zip_filename}: {str(e)}")
-        return False
+        print(f"Error unzipping '{zip_filename}': {e}")
+        return None
 
-# Example usage:
-# success = unzip_file('downloaded_file.zip', '/path/to/extract')
+
 
 def clean_directory(directory):
     """
