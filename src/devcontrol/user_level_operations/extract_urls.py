@@ -35,6 +35,10 @@ def get_page_content(page_url):
 def get_urls_referenced_on_website(site):
     html = get_page_content(site)
     urls = extract_990_urls(html)
+    with open('/home/don/Documents/Temp/dev990/xml_urls.txt', 'w') as f:
+        for line in urls:
+            print(line)
+            f.write(f"{line}\n")
     return urls
 
 

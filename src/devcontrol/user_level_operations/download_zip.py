@@ -6,8 +6,8 @@ from contextlib import closing
 def download_next_url(url_generator, **kwargs):
     try:
         for url in url_generator:
-            next_url = next(url_generator)
-            result = download_zip(next_url, **kwargs)
+            print(f"download_zip: url: {url}")
+            result = download_zip(url, **kwargs)
             yield result
     except StopIteration:
         print("No more URLs available in the generator")

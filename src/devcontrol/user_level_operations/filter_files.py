@@ -4,6 +4,7 @@ import lxml.etree as ET
 import csv
 from datetime import datetime
 
+
 def filter_driver(directory_generator, **kwargs):
     try:
         for input_directory in directory_generator:
@@ -12,11 +13,15 @@ def filter_driver(directory_generator, **kwargs):
     except StopIteration:
         return None
     except Exception as e:
-        log_error(f"Critical error during filtering: {e}")
+        log_error(f"Critical error during filtering: {e}, kwargs: {kwargs}")
         raise
+
 
 def process_directory(input_directory, **kwargs):
     try:
+        if not input_directory:
+            print(f"process_directory null input: {kwargs}")
+            return 0, 0
         raw_directory = os.path.join(input_directory, 'raw')
         processed_directory = os.path.join(input_directory, 'processed')
         result_directory = os.path.join(input_directory, 'result')
@@ -24,18 +29,25 @@ def process_directory(input_directory, **kwargs):
         # Ensure subdirectories exist
         os.makedirs(processed_directory, exist_ok=True)
         os.makedirs(result_directory, exist_ok=True)
+        count_true = 0
+        count_false = 0
 
         for filename in os.listdir(raw_directory):
             raw_filepath = os.path.join(raw_directory, filename)
 
             if os.path.isfile(raw_filepath):
-                filter_file(raw_filepath, input_directory, **kwargs)
-
-        return True
+                result = filter_file(raw_filepath, input_directory, **kwargs)
+                if result:
+                    count_true += 1
+                else:
+                    count_false += 1
+        print(f"Input: {input_directory}, found: {count_true}, other: {count_false}")
+        return count_true, count_false
 
     except Exception as e:
         log_error(f"Error processing directory '{input_directory}': {e}")
         raise
+
 
 def filter_file(filepath, input_directory, **kwargs):
     try:
@@ -57,14 +69,19 @@ def filter_file(filepath, input_directory, **kwargs):
 
         # Parse the input file
         tree = ET.parse(filepath)
-        root = tree.getroot()
+        try:
+            root = tree.getroot()
 
-        # Extract namespaces from the XML root
-        namespaces = root.nsmap
+            # Extract namespaces from the XML root
+            namespaces = root.nsmap
 
-        # Prepare XML result document
-        result_root = ET.Element('Results')
+            # Prepare XML result document
+            result_root = ET.Element('Results')
+        except Exception as e:
+            print(f"NAMESPACE ISSUE: {e}")
 
+            foo = 3
+        subdir = ''
         for xpath, filter_expression, true_action, false_action in xpaths:
             # Rewrite XPath with namespace prefix if needed
             rewritten_xpath = rewrite_xpath_with_namespace(xpath, namespaces)
@@ -87,6 +104,15 @@ def filter_file(filepath, input_directory, **kwargs):
                             except ValueError:
                                 log_error(f"Value '{x}' is not numeric for filter '{filter_expression}'")
                                 filter_result = False
+                        elif filter_type == 'zip':
+                            x = str(x)
+                            if len(x) == 9:
+                                x = x[:5]
+                            elif len(x) != 5:
+                                print(f"ZIP LEN: {x}")
+                            subdir = x
+                        elif filter_type == 'frn':
+                            subdir = "foreign"
                         else:
                             log_error(f"Unknown filter type '{filter_type}' in filter '{filter_expression}'")
                             filter_result = False
@@ -100,7 +126,7 @@ def filter_file(filepath, input_directory, **kwargs):
                 if action == 'IGNORE':
                     os.remove(filepath)
                     # log_error(f"File '{filepath}' ignored based on filter for '{xpath}'.")
-                    return
+                    return False
                 elif action == 'RECORD':
                     cleaned_match = remove_namespace(match)
                     copied_element = ET.Element(cleaned_match.tag, attrib=cleaned_match.attrib)
@@ -113,6 +139,8 @@ def filter_file(filepath, input_directory, **kwargs):
         # Save results to XML file
         result_directory = os.path.join(input_directory, 'result')
         os.makedirs(result_directory, exist_ok=True)
+        result_directory = os.path.join(result_directory, subdir)
+        os.makedirs(result_directory, exist_ok=True)
 
         result_filename = os.path.basename(filepath).rsplit('.', 1)[0] + '.xml'
         result_filepath = os.path.join(result_directory, result_filename)
@@ -124,11 +152,15 @@ def filter_file(filepath, input_directory, **kwargs):
         # Move the processed file to the 'processed' directory
         processed_directory = os.path.join(input_directory, 'processed')
         os.makedirs(processed_directory, exist_ok=True)
+        processed_directory = os.path.join(processed_directory, subdir)
+        os.makedirs(processed_directory, exist_ok=True)
         shutil.move(filepath, os.path.join(processed_directory, os.path.basename(filepath)))
+        return True
 
     except Exception as e:
         log_error(f"Error processing file '{filepath}': {e}")
         raise
+
 
 def remove_namespace(element):
     """
@@ -142,6 +174,7 @@ def remove_namespace(element):
         elem.attrib.clear()
         elem.attrib.update(attributes)  # Restore attributes without namespaces
     return element
+
 
 def rewrite_xpath_with_namespace(xpath, namespaces):
     """

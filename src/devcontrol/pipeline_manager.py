@@ -148,7 +148,7 @@ class PipelineManager:
         Execute operation with input/output handling and optional parameters.
         """
         step_name = step_config["step_name"]
-        self.logger.info(f"Begin Processing Step: {step_name}")
+        self.logger.debug(f"Begin execute_operation Step: {step_name}")
 
         try:
             # Load operation function if needed
@@ -164,15 +164,17 @@ class PipelineManager:
             if step_config.get("process_mode") == "none":
                 output_data = input_data
             else:
+                self.logger.debug(f"Run function: {step_config["function"]} in {step_config["module"]}")
                 # Pass parameters if the function accepts them
                 if parameters:
                     output_data = operation(input_data, **parameters)
                 else:
                     output_data = operation(input_data)
+            self.logger.debug(f"Complete execute_operation Step: {step_name}")
 
             # Handle output storage
             output_data = self._handle_output(step_config, output_data, step_context)
-
+            self.logger.debug(f"End execute_operation Step: {step_name}")
             return output_data
 
         except Exception as e:
@@ -224,23 +226,26 @@ class PipelineManager:
     def _wrap_in_generator(self, data, step_config):
         """Ensures generator output is correctly wrapped and applies filter expressions."""
         filter_expr = step_config.get("generator", {}).get("filter")
-        count = 0  # Initialize count for filtering
+        step_name = step_config["step_name"]  # Use step name as the unique identifier
+        count_map = {step_name: 0}  # Use a dictionary to track count per step
+        self.logger.debug(f"_wrap_in_generator for {step_name}, count: {count_map[step_name]}")
 
         def filtered_generator():
-            nonlocal count
+            nonlocal count_map
             for item in data:
-                print(f"Filtering Item: {item}, Count: {count}")  # Debug output
+                count = count_map[step_name]  # Retrieve the count for this step
+                print(f"Filtering Item: {item}, Step: {step_name}, Count: {count}")  # Debug output
                 if filter_expr:
                     filter_func = eval(f"lambda item, count: {filter_expr}")
                     try:
                         if filter_func(item, count):
                             yield item
                     except Exception as e:
-                        print(f"Error in filter function: {e}")
+                        print(f"Error in filter function for step {step_name}: {e}")
                         raise
                 else:
                     yield item
-                count += 1
+                count_map[step_name] += 1  # Increment the count for this step
 
         # Check if data is already a generator
         if hasattr(data, '__iter__') and hasattr(data, '__next__'):

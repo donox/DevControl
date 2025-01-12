@@ -7,7 +7,7 @@ steps:
     process_mode: none    #  "nested", "single", or "none"
     generator:
       enabled: true
-      filter: "count < 2"    # filter expression has access to "item" and "count"
+      filter: "count < 56"    # filter expression has access to "item" and "count"
     input:
       mode: previous    #  "previous", "storage", or "passthrough"
     output:
@@ -20,11 +20,11 @@ steps:
   # Find urls on gov't website
   - step_name: get_urls
     module: devcontrol.user_level_operations.extract_urls
-    function: get_urls_referenced_on_website
+    function: get_urls_referenced_on_website      # GETTING ONLY 2024 URLS !!!!!!!!!!!!!!!!!!!
     process_mode: single    #  "nested", "single", or "none"
     generator:
       enabled: true
-      filter: "count < 2"    # do first element only to start
+      filter: "count!=50"    # limit while testing
     input:
       mode: explicit_input
       storage:
@@ -85,7 +85,7 @@ steps:
     input:
       mode: previous
     parameters:
-      directory: ./output/expanded_zip_files/2024_TEOS_XML_02A
+      directory: ./output/expanded_zip_files/2023_TEOS_XML_02A
       xpaths: ./Xpath990PF.csv
     output:
       storage:
